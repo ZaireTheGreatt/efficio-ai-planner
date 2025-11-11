@@ -17,7 +17,7 @@ type TaskInputProps = {
     title: string;
     description?: string;
     priority: "low" | "medium" | "high" | "urgent";
-    frequency: "daily" | "weekly" | "monthly" | "yearly";
+    frequency: "once" | "daily" | "weekly" | "monthly" | "yearly";
     dueDate?: Date;
   }) => void;
 };
@@ -26,7 +26,7 @@ export const TaskInput = ({ onAddTask }: TaskInputProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
-  const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly" | "yearly">("daily");
+  const [frequency, setFrequency] = useState<"once" | "daily" | "weekly" | "monthly" | "yearly">("once");
   const [dueDate, setDueDate] = useState<Date>();
   const { toast } = useToast();
 
@@ -54,7 +54,7 @@ export const TaskInput = ({ onAddTask }: TaskInputProps) => {
     setTitle("");
     setDescription("");
     setPriority("medium");
-    setFrequency("daily");
+    setFrequency("once");
     setDueDate(undefined);
 
     toast({
@@ -118,6 +118,7 @@ export const TaskInput = ({ onAddTask }: TaskInputProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="once">Once</SelectItem>
                   <SelectItem value="daily">Daily</SelectItem>
                   <SelectItem value="weekly">Weekly</SelectItem>
                   <SelectItem value="monthly">Monthly</SelectItem>
