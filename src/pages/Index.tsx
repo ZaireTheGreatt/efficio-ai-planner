@@ -8,6 +8,7 @@ import { AIPriorityPanel } from "@/components/AIPriorityPanel";
 import { CheckCircle2, LogOut } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import type { User } from "@supabase/supabase-js";
 
 export type Task = {
@@ -27,6 +28,7 @@ const Index = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Set up auth state listener
@@ -51,6 +53,44 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Load tasks from database when user is authenticated
+  useEffect(() => {
+    if (user) {
+      loadTasks();
+    }
+  }, [user]);
+
+  const loadTasks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const formattedTasks: Task[] = data.map((task) => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        priority: task.priority as Task["priority"],
+        frequency: task.frequency as Task["frequency"],
+        dueDate: task.due_date ? new Date(task.due_date) : undefined,
+        completed: task.completed,
+        createdAt: new Date(task.created_at),
+      }));
+
+      setTasks(formattedTasks);
+    } catch (error) {
+      console.error("Error loading tasks:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load tasks",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
@@ -71,24 +111,98 @@ const Index = () => {
     return null;
   }
 
-  const handleAddTask = (task: Omit<Task, "id" | "completed" | "createdAt">) => {
-    const newTask: Task = {
-      ...task,
-      id: Math.random().toString(36).substr(2, 9),
-      completed: false,
-      createdAt: new Date(),
-    };
-    setTasks([...tasks, newTask]);
+  const handleAddTask = async (task: Omit<Task, "id" | "completed" | "createdAt">) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert({
+          user_id: user.id,
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          frequency: task.frequency,
+          due_date: task.dueDate?.toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newTask: Task = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        frequency: data.frequency,
+        dueDate: data.due_date ? new Date(data.due_date) : undefined,
+        completed: data.completed,
+        createdAt: new Date(data.created_at),
+      };
+
+      setTasks([newTask, ...tasks]);
+      toast({
+        title: "Success",
+        description: "Task added successfully",
+      });
+    } catch (error) {
+      console.error("Error adding task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add task",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleToggleTask = (id: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+  const handleToggleTask = async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .update({ completed: !task.completed })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setTasks(tasks.map(t => 
+        t.id === id ? { ...t, completed: !t.completed } : t
+      ));
+    } catch (error) {
+      console.error("Error toggling task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter(task => task.id !== id));
+  const handleDeleteTask = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setTasks(tasks.filter(task => task.id !== id));
+      toast({
+        title: "Success",
+        description: "Task deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
