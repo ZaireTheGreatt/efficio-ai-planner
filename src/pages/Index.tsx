@@ -5,6 +5,8 @@ import { TaskInput } from "@/components/TaskInput";
 import { TaskList } from "@/components/TaskList";
 import { CalendarView } from "@/components/CalendarView";
 import { AIPriorityPanel } from "@/components/AIPriorityPanel";
+import { AdminDashboard } from "@/components/AdminDashboard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { CheckCircle2, LogOut } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,7 @@ export type Task = {
   dueDate?: Date;
   completed: boolean;
   createdAt: Date;
+  attachments?: { name: string; url: string }[];
 };
 
 const Index = () => {
@@ -78,6 +81,7 @@ const Index = () => {
         dueDate: task.due_date ? new Date(task.due_date) : undefined,
         completed: task.completed,
         createdAt: new Date(task.created_at),
+        attachments: task.attachments || [],
       }));
 
       setTasks(formattedTasks);
@@ -124,6 +128,7 @@ const Index = () => {
           priority: task.priority,
           frequency: task.frequency,
           due_date: task.dueDate?.toISOString(),
+          attachments: task.attachments || [],
         })
         .select()
         .single();
@@ -139,6 +144,7 @@ const Index = () => {
         dueDate: data.due_date ? new Date(data.due_date) : undefined,
         completed: data.completed,
         createdAt: new Date(data.created_at),
+        attachments: data.attachments || [],
       };
 
       setTasks([newTask, ...tasks]);
@@ -220,10 +226,13 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Smart Task Manager with AI Assistance</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -233,8 +242,9 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Task Input & AI Panel */}
           <div className="space-y-6">
-            <TaskInput onAddTask={handleAddTask} />
+            <TaskInput onAddTask={handleAddTask} userId={user.id} />
             <AIPriorityPanel tasks={tasks} />
+            <AdminDashboard />
           </div>
 
           {/* Middle & Right Column - Tasks & Calendar */}

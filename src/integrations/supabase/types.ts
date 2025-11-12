@@ -37,6 +37,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          attachments: Json | null
           completed: boolean
           created_at: string
           description: string | null
@@ -49,6 +50,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attachments?: Json | null
           completed?: boolean
           created_at?: string
           description?: string | null
@@ -61,6 +63,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attachments?: Json | null
           completed?: boolean
           created_at?: string
           description?: string | null
