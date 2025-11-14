@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Clock } from "lucide-react";
+import { Trash2, Clock, Paperclip } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/pages/Index";
+import { TaskDetailsDialog } from "./TaskDetailsDialog";
 
 type TaskListProps = {
   tasks: Task[];
@@ -21,17 +23,31 @@ const priorityColors = {
 };
 
 export const TaskList = ({ tasks, onToggleTask, onDeleteTask }: TaskListProps) => {
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const sortedTasks = [...tasks].sort((a, b) => {
     const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
     return priorityOrder[a.priority] - priorityOrder[b.priority];
   });
 
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setDialogOpen(true);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Tasks ({tasks.length})</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <>
+      <TaskDetailsDialog
+        task={selectedTask}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Tasks ({tasks.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
         {sortedTasks.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>No tasks yet. Add your first task to get started!</p>
@@ -42,13 +58,15 @@ export const TaskList = ({ tasks, onToggleTask, onDeleteTask }: TaskListProps) =
               <div
                 key={task.id}
                 className={cn(
-                  "flex items-start gap-3 p-4 rounded-lg border border-border bg-card transition-all hover:shadow-md",
+                  "flex items-start gap-3 p-4 rounded-lg border border-border bg-card transition-all hover:shadow-md cursor-pointer",
                   task.completed && "opacity-60"
                 )}
+                onClick={() => handleTaskClick(task)}
               >
                 <Checkbox
                   checked={task.completed}
                   onCheckedChange={() => onToggleTask(task.id)}
+                  onClick={(e) => e.stopPropagation()}
                   className="mt-1"
                 />
                 
@@ -79,13 +97,22 @@ export const TaskList = ({ tasks, onToggleTask, onDeleteTask }: TaskListProps) =
                         {format(task.dueDate, "MMM d, yyyy")}
                       </span>
                     )}
+                    {task.attachments && task.attachments.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Paperclip className="h-3 w-3" />
+                        {task.attachments.length}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onDeleteTask(task.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteTask(task.id);
+                  }}
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -94,7 +121,8 @@ export const TaskList = ({ tasks, onToggleTask, onDeleteTask }: TaskListProps) =
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </>
   );
 };
