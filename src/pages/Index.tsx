@@ -7,7 +7,7 @@ import { CalendarView } from "@/components/CalendarView";
 import { AIPriorityPanel } from "@/components/AIPriorityPanel";
 import { AdminDashboard } from "@/components/AdminDashboard";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { CheckCircle2, LogOut } from "lucide-react";
+import { CheckCircle2, LogOut, Shield } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -60,8 +61,22 @@ const Index = () => {
   useEffect(() => {
     if (user) {
       loadTasks();
+      checkAdminRole();
     }
   }, [user]);
+
+  const checkAdminRole = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    setIsAdmin(!!data);
+  };
 
   const loadTasks = async () => {
     try {
@@ -228,6 +243,16 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/admin")}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Admin
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
